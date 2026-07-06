@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { formatCurrency } from '@/lib/currency';
 import { toast } from 'sonner';
-import type { Contact, Tag, ContactTag, ContactNote, CustomField, ContactCustomValue, Deal } from '@/types';
+import type { Contact, Tag, ContactTag, ContactNote, CustomField, ContactCustomValue, Deal, ContactMemory } from '@/types';
 import {
   Sheet,
   SheetContent,
@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -33,6 +34,7 @@ import {
   Save,
   X,
   DollarSign,
+  Pencil,
 } from 'lucide-react';
 
 interface ContactDetailViewProps {
@@ -78,6 +80,15 @@ export function ContactDetailView({
   const [customValues, setCustomValues] = useState<Record<string, string>>({});
   const [savingCustom, setSavingCustom] = useState(false);
   const [loadingCustom, setLoadingCustom] = useState(false);
+
+  // Memory tab
+  const [memories, setMemories] = useState<ContactMemory[]>([]);
+  const [memoryType, setMemoryType] = useState<ContactMemory['memory_type']>('summary');
+  const [memoryTitle, setMemoryTitle] = useState('');
+  const [memoryText, setMemoryText] = useState('');
+  const [editingMemoryId, setEditingMemoryId] = useState<string | null>(null);
+  const [savingMemory, setSavingMemory] = useState(false);
+  const [loadingMemories, setLoadingMemories] = useState(false);
 
   // Deals tab
   const [deals, setDeals] = useState<Deal[]>([]);
@@ -154,6 +165,102 @@ export function ContactDetailView({
     setLoadingCustom(false);
   }, [contactId, supabase]);
 
+  const fetchMemories = useCallback(async () => {
+    if (!contactId) return;
+    setLoadingMemories(true);
+
+    const response = await fetch(
+      `/api/contact-memories?contactId=${encodeURIComponent(contactId)}`
+    )
+    const result = await response.json().catch(() => null)
+
+    if (!response.ok || !result) {
+      toast.error(result?.error || 'Failed to load customer memory');
+    } else {
+      setMemories(result.memories ?? []);
+    }
+
+    setLoadingMemories(false);
+  }, [contactId]);
+
+  const cancelEditMemory = () => {
+    setEditingMemoryId(null);
+    setMemoryType('summary');
+    setMemoryTitle('');
+    setMemoryText('');
+  };
+
+  const editMemory = (memory: ContactMemory) => {
+    setEditingMemoryId(memory.id);
+    setMemoryType(memory.memory_type);
+    setMemoryTitle(memory.title ?? '');
+    setMemoryText(memory.memory_text);
+  };
+
+  const addMemory = async () => {
+    if (!contactId || !memoryText.trim()) {
+      toast.error('Memory text is required');
+      return;
+    }
+
+    setSavingMemory(true);
+
+    const payload = {
+      memory_type: memoryType,
+      title: memoryTitle.trim() || null,
+      memory_text: memoryText.trim(),
+    } as Record<string, unknown>;
+
+    const endpoint = editingMemoryId
+      ? `/api/contact-memories/${encodeURIComponent(editingMemoryId)}`
+      : '/api/contact-memories';
+
+    const method = editingMemoryId ? 'PATCH' : 'POST';
+
+    const response = await fetch(endpoint, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    const result = await response.json().catch(() => null);
+
+    if (!response.ok || !result) {
+      toast.error(result?.error || 'Failed to save memory');
+    } else {
+      setMemoryTitle('');
+      setMemoryText('');
+      setMemoryType('summary');
+      setEditingMemoryId(null);
+      fetchMemories();
+      toast.success(
+        editingMemoryId
+          ? 'Memory updated successfully'
+          : 'Memory added to the customer digital twin',
+      );
+    }
+
+    setSavingMemory(false);
+  };
+
+  const deleteMemory = async (memoryId: string) => {
+    const response = await fetch(
+      `/api/contact-memories/${encodeURIComponent(memoryId)}`,
+      {
+        method: 'DELETE',
+      },
+    )
+
+    const result = await response.json().catch(() => null)
+
+    if (!response.ok || !result) {
+      toast.error(result?.error || 'Failed to delete memory');
+    } else {
+      setMemories((prev) => prev.filter((memory) => memory.id !== memoryId));
+      toast.success('Memory record deleted');
+    }
+  };
+
   const fetchDeals = useCallback(async () => {
     if (!contactId) return;
     setLoadingDeals(true);
@@ -172,9 +279,10 @@ export function ContactDetailView({
       fetchTags();
       fetchNotes();
       fetchCustomFields();
+      fetchMemories();
       fetchDeals();
     }
-  }, [open, contactId, fetchContact, fetchTags, fetchNotes, fetchCustomFields, fetchDeals]);
+  }, [open, contactId, fetchContact, fetchTags, fetchNotes, fetchCustomFields, fetchMemories, fetchDeals]);
 
   async function copyPhone() {
     if (!contact) return;
@@ -406,6 +514,12 @@ export function ContactDetailView({
                   Notes
                 </TabsTrigger>
                 <TabsTrigger
+                  value="memory"
+                  className="data-active:bg-slate-800 data-active:text-primary text-slate-400"
+                >
+                  Digital Twin
+                </TabsTrigger>
+                <TabsTrigger
                   value="custom"
                   className="data-active:bg-slate-800 data-active:text-primary text-slate-400"
                 >
@@ -568,6 +682,148 @@ export function ContactDetailView({
                             year: 'numeric',
                             hour: '2-digit',
                             minute: '2-digit',
+                          })}
+                        </p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </TabsContent>
+
+              {/* Digital Twin Memory Tab */}
+              <TabsContent value="memory" className="flex-1 flex flex-col min-h-0 px-4 py-3">
+                <div className="space-y-3 mb-3">
+                  <div className="grid gap-3 md:grid-cols-[1fr_auto]">
+                    <div className="space-y-3">
+                      {editingMemoryId ? (
+                        <div className="rounded-2xl border border-slate-700/50 bg-slate-950/80 p-3 text-sm text-slate-300">
+                          Editing existing memory. Save to update it, or cancel to start a new one.
+                        </div>
+                      ) : null}
+                      <div>
+                        <Label className="text-slate-400 text-xs">Memory type</Label>
+                        <div className="grid grid-cols-2 gap-2 mt-2">
+                          {[
+                            { value: 'summary', label: 'Summary' },
+                            { value: 'preference', label: 'Preference' },
+                            { value: 'objection', label: 'Objection' },
+                            { value: 'purchase_history', label: 'Purchase' },
+                            { value: 'task', label: 'Task' },
+                            { value: 'other', label: 'Other' },
+                          ].map((option) => (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() => setMemoryType(option.value as ContactMemory['memory_type'])}
+                              className={`rounded-md border px-3 py-2 text-left text-sm transition-all ${
+                                memoryType === option.value
+                                  ? 'border-primary bg-slate-900 text-primary'
+                                  : 'border-slate-700 bg-slate-800 text-slate-300 hover:border-slate-500'
+                              }`}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-slate-400 text-xs">Memory title</Label>
+                        <Input
+                          value={memoryTitle}
+                          onChange={(e) => setMemoryTitle(e.target.value)}
+                          placeholder="Optional title"
+                          className="bg-slate-800 border-slate-700 text-white h-10 text-sm"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-slate-400 text-xs">Memory details</Label>
+                        <Textarea
+                          value={memoryText}
+                          onChange={(e) => setMemoryText(e.target.value)}
+                          placeholder="Add a customer memory or important context..."
+                          className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 min-h-[120px] text-sm resize-none"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end justify-between gap-3">
+                      <Button
+                        onClick={addMemory}
+                        disabled={!memoryText.trim() || savingMemory}
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground w-full"
+                        size="sm"
+                      >
+                        {savingMemory ? (
+                          <Loader2 className="size-3.5 animate-spin" />
+                        ) : (
+                          <Plus className="size-3.5" />
+                        )}
+                        {editingMemoryId ? 'Update Memory' : 'Save Memory'}
+                      </Button>
+                      {editingMemoryId ? (
+                        <Button
+                          variant="secondary"
+                          onClick={cancelEditMemory}
+                          className="w-full"
+                          size="sm"
+                        >
+                          Cancel
+                        </Button>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto space-y-3">
+                  {loadingMemories ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="size-5 animate-spin text-slate-500" />
+                    </div>
+                  ) : memories.length === 0 ? (
+                    <p className="text-sm text-slate-500 text-center py-8">
+                      No customer memories yet. Capture the relationship context here so Brand Reach Solutions can remember what matters.
+                    </p>
+                  ) : (
+                    memories.map((memory) => (
+                      <div
+                        key={memory.id}
+                        className="rounded-2xl border border-slate-700/60 bg-slate-900/70 p-4 shadow-sm"
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div className="space-y-2">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="rounded-full bg-slate-800 px-2 py-1 text-[11px] uppercase tracking-wide text-slate-300">
+                                {memory.memory_type.replace('_', ' ')}
+                              </span>
+                              {memory.title ? (
+                                <p className="text-sm font-medium text-slate-100">{memory.title}</p>
+                              ) : null}
+                            </div>
+                            <p className="text-sm text-slate-300 whitespace-pre-wrap">{memory.memory_text}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => editMemory(memory)}
+                              className="text-slate-400 hover:text-primary transition-colors"
+                              title="Edit memory"
+                              type="button"
+                            >
+                              <Pencil className="size-4" />
+                            </button>
+                            <button
+                              onClick={() => deleteMemory(memory.id)}
+                              className="text-slate-400 hover:text-red-400 transition-colors"
+                              title="Delete memory"
+                              type="button"
+                            >
+                              <Trash2 className="size-4" />
+                            </button>
+                          </div>
+                        </div>
+                        <p className="text-xs text-slate-500 mt-3">
+                          Updated {new Date(memory.updated_at).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
                           })}
                         </p>
                       </div>

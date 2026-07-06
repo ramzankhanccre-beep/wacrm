@@ -28,6 +28,10 @@ import {
   Tag,
   UserPlus,
   Workflow,
+  CheckSquare,
+  Clock,
+  Zap,
+  Webhook,
 } from "lucide-react";
 
 // ============================================================
@@ -48,6 +52,10 @@ export type NodeType =
   | "condition"
   | "set_tag"
   | "handoff"
+  | "approval"
+  | "agent"
+  | "webhook"
+  | "wait"
   | "end";
 
 export interface BuilderNode {
@@ -109,6 +117,26 @@ export const NODE_META: Record<
     label: "Handoff to agent",
     icon: UserPlus,
     color: "text-amber-400",
+  },
+  approval: {
+    label: "Require approval",
+    icon: CheckSquare,
+    color: "text-orange-400",
+  },
+  agent: {
+    label: "Call AI agent",
+    icon: Zap,
+    color: "text-purple-400",
+  },
+  webhook: {
+    label: "Send webhook",
+    icon: Webhook,
+    color: "text-blue-400",
+  },
+  wait: {
+    label: "Wait",
+    icon: Clock,
+    color: "text-slate-400",
   },
   end: { label: "End", icon: Flag, color: "text-slate-400" },
 };
@@ -251,5 +279,7 @@ export function summarizeNode(node: BuilderNode): string | null {
       const note = typeof cfg.note === "string" ? cfg.note : "";
       return note.length > 0 ? truncate(note) : null;
     }
+    default:
+      return null;
   }
 }

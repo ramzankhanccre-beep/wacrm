@@ -228,6 +228,11 @@ export function outgoingSlots(node: BuilderNode): OutgoingSlot[] {
 
     case "handoff":
     case "end":
+    case "agent":
+    case "webhook":
+    case "wait":
+      return [];
+    default:
       return [];
   }
 }
@@ -312,6 +317,11 @@ export function applyEdgeConnection(
 
     case "handoff":
     case "end":
+    case "agent":
+    case "webhook":
+    case "wait":
+      return null;
+    default:
       return null;
   }
 }
@@ -406,6 +416,11 @@ function patchedConfigWithoutKey(
 
     case "handoff":
     case "end":
+    case "agent":
+    case "webhook":
+    case "wait":
+      return null;
+    default:
       return null;
   }
 }

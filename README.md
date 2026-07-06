@@ -1,8 +1,7 @@
-# wacrm — CRM Template for WhatsApp
+# Brand Reach Solutions — WhatsApp CRM
 
-> Self-hostable CRM template for WhatsApp® — shared inbox, contacts,
-> sales pipelines, broadcasts, and no-code automations. Fork it, brand
-> it, host it.
+> Self-hostable WhatsApp CRM by Brand Reach Solutions — shared inbox,
+> contacts, sales pipelines, broadcasts, and no-code automations.
 
 <p align="center">
   <a href="https://www.hostinger.com/web-apps-hosting">
@@ -66,8 +65,8 @@ in an afternoon and make yours.
 
 ```bash
 # Fork on GitHub first: https://github.com/ArnasDon/wacrm → Fork
-git clone https://github.com/<your-username>/wacrm.git
-cd wacrm
+git clone https://github.com/<your-username>/brand-reach-solutions.git
+cd brand-reach-solutions
 npm install
 cp .env.local.example .env.local   # fill in Supabase + Meta creds
 npm run dev

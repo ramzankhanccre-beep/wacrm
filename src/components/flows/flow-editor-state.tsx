@@ -186,6 +186,8 @@ export function defaultConfigFor(type: NodeType): Record<string, unknown> {
       return { note: "" };
     case "end":
       return {};
+    default:
+      return {};
   }
 }
 

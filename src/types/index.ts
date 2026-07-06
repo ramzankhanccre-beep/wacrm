@@ -139,7 +139,18 @@ export interface ContactNote {
   note_text: string;
   created_at: string;
 }
-
+export interface ContactMemory {
+  id: string;
+  contact_id: string;
+  account_id: string;
+  user_id: string;
+  memory_type: 'summary' | 'preference' | 'objection' | 'purchase_history' | 'task' | 'other';
+  title?: string;
+  memory_text: string;
+  metadata?: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
 export type ConversationStatus = 'open' | 'pending' | 'closed';
 
 export interface Conversation {
@@ -531,4 +542,273 @@ export interface AutomationLog {
   error_message?: string | null;
   created_at: string;
   contact?: Contact;
+}
+
+// ============================================
+// PHASE 3: AI Workforce Platform Types
+// ============================================
+
+// ============================================
+// Agent Type (for Phase 1 & 3)
+// ============================================
+
+export interface Agent {
+  id: string;
+  user_id: string;
+  account_id: string;
+  name: string;
+  description: string | null;
+  goal: string | null;
+  personality: string;
+  tone: string;
+  communication_style: string;
+  languages: string[];
+  business_context: string | null;
+  instructions: string | null;
+  status: 'draft' | 'testing' | 'live' | 'archived';
+  created_at: string;
+  updated_at: string;
+}
+
+// ============================================
+// PHASE 3: AI Workforce Platform Types
+// ============================================
+
+export interface AgentTeam {
+  id: string;
+  account_id: string;
+  name: string;
+  description: string | null;
+  color: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AgentTeamMember {
+  id: string;
+  team_id: string;
+  agent_id: string;
+  role: 'lead' | 'member';
+  created_at: string;
+  // Joined data
+  agent?: Agent;
+  team?: AgentTeam;
+}
+
+export interface AgentRoutingRule {
+  id: string;
+  account_id: string;
+  name: string;
+  description: string | null;
+  priority: number;
+  conditions: RoutingCondition;
+  target_team_id: string | null;
+  target_agent_id: string | null;
+  fallback_agent_id: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  // Joined data
+  target_team?: AgentTeam;
+  target_agent?: Agent;
+  fallback_agent?: Agent;
+}
+
+export interface RoutingCondition {
+  lead_stage?: string;
+  message_contains?: string;
+  contact_tag?: string;
+  time_of_day?: {
+    start: string;
+    end: string;
+  };
+  contact_history?: {
+    min_messages?: number;
+    max_messages?: number;
+  };
+}
+
+export interface AgentQueue {
+  id: string;
+  account_id: string;
+  agent_id: string;
+  conversation_id: string;
+  priority: number;
+  status: 'queued' | 'in_progress' | 'completed' | 'failed';
+  assigned_at: string | null;
+  completed_at: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  // Joined data
+  agent?: Agent;
+  conversation?: Conversation;
+}
+
+export interface TeamSkill {
+  id: string;
+  team_id: string;
+  skill_name: string;
+  skill_config: Record<string, unknown>;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  // Joined data
+  team?: AgentTeam;
+}
+
+export interface TeamKnowledgeBase {
+  id: string;
+  team_id: string;
+  knowledge_base_id: string;
+  access_level: 'read' | 'write';
+  account_id: string;
+  created_at: string;
+  // Joined data
+  team?: AgentTeam;
+}
+
+export interface AgentSchedule {
+  id: string;
+  agent_id: string;
+  account_id: string;
+  day_of_week: number;
+  start_time: string;
+  end_time: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  // Joined data
+  agent?: Agent;
+}
+
+// ============================================================
+// PHASE 6: Voice Intelligence Platform Types
+// ============================================================
+
+export interface VoiceSTTConfig {
+  id: string;
+  account_id: string;
+  provider: string;
+  model: string;
+  language: string;
+  enable_diarization: boolean;
+  enable_punctuation: boolean;
+  is_default: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VoiceTTSConfig {
+  id: string;
+  account_id: string;
+  provider: string;
+  voice_id: string;
+  voice_name: string;
+  language: string;
+  speed: number;
+  pitch: number;
+  enable_ssml: boolean;
+  is_default: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VoiceAgent {
+  id: string;
+  account_id: string;
+  name: string;
+  description: string | null;
+  agent_id: string | null;
+  stt_config_id: string | null;
+  tts_config_id: string | null;
+  enable_inbound: boolean;
+  enable_outbound: boolean;
+  max_duration_minutes: number;
+  silence_timeout_seconds: number;
+  interruption_sensitivity: 'high' | 'medium' | 'low';
+  greeting_message: string | null;
+  fallback_message: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  // Joined data
+  agent?: Agent;
+}
+
+export interface VoiceSentimentConfig {
+  id: string;
+  account_id: string;
+  name: string;
+  provider: string;
+  enable_real_time: boolean;
+  negative_threshold: number;
+  auto_escalate_on_negative: boolean;
+  alert_channels: string[];
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VoiceSentimentLog {
+  id: string;
+  account_id: string;
+  call_id: string | null;
+  agent_id: string | null;
+  sentiment_score: number;
+  emotion: string;
+  confidence: number;
+  transcript_segment: string | null;
+  created_at: string;
+  // Joined data
+  agent?: Agent;
+}
+
+export interface VoiceTranscript {
+  id: string;
+  account_id: string;
+  contact_id: string | null;
+  call_id: string | null;
+  audio_url: string | null;
+  transcript: string;
+  summary: string | null;
+  key_phrases: string[];
+  duration_seconds: number;
+  language: string;
+  speakers_detected: number;
+  created_at: string;
+  // Joined data
+  contact?: Contact;
+}
+
+export interface VoiceMemoryEntry {
+  id: string;
+  account_id: string;
+  contact_id: string | null;
+  call_id: string | null;
+  entry_type: 'summary' | 'key_phrase' | 'commitment' | 'action_item';
+  content: string;
+  importance: number;
+  created_at: string;
+  // Joined data
+  contact?: Contact;
+}
+
+export interface VoiceCall {
+  id: string;
+  account_id: string;
+  contact_id: string | null;
+  voice_agent_id: string | null;
+  direction: 'inbound' | 'outbound';
+  status: 'initiated' | 'ringing' | 'answered' | 'completed' | 'failed' | 'busy' | 'no_answer';
+  started_at: string;
+  ended_at: string | null;
+  duration_seconds: number;
+  transcript_id: string | null;
+  created_at: string;
+  // Joined data
+  contact?: Contact;
+  voice_agent?: VoiceAgent;
 }

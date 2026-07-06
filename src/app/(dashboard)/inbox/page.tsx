@@ -8,9 +8,13 @@ import { useRealtime } from "@/hooks/use-realtime";
 import { ConversationList } from "@/components/inbox/conversation-list";
 import { MessageThread } from "@/components/inbox/message-thread";
 import { ContactSidebar } from "@/components/inbox/contact-sidebar";
+import { NewMessageDialog } from "@/components/inbox/new-message-dialog";
 import { toast } from "sonner";
-import { WifiOff } from "lucide-react";
+import { WifiOff, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { GatedButton } from "@/components/ui/gated-button";
+import { useCan } from "@/hooks/use-can";
 
 export default function InboxPage() {
   const router = useRouter();
@@ -38,6 +42,12 @@ export default function InboxPage() {
    * once on conversationId-change as usual.
    */
   const [resyncToken, setResyncToken] = useState(0);
+
+  // New message dialog state
+  const [newMessageDialogOpen, setNewMessageDialogOpen] = useState(false);
+
+  // Permission check for new message button
+  const canSend = useCan("send-messages");
 
   // Fire the deep-link auto-select exactly once per URL — subsequent
   // list refreshes (realtime, manual refetch) must not snap the user
@@ -503,6 +513,43 @@ export default function InboxPage() {
     [activeConversation]
   );
 
+  // Handle new conversation created from the New Message dialog
+  const handleNewConversationCreated = useCallback(
+    async (conversationId: string) => {
+      const supabase = createClient();
+
+      // Fetch the new conversation with contact
+      const { data: conversation, error } = await supabase
+        .from("conversations")
+        .select("*, contact:contacts(*)")
+        .eq("id", conversationId)
+        .single();
+
+      if (error || !conversation) {
+        toast.error("Failed to load new conversation");
+        return;
+      }
+
+      // Add to conversations list
+      setConversations((prev) => {
+        if (prev.some((c) => c.id === conversation.id)) return prev;
+        return [conversation, ...prev];
+      });
+
+      // Select the new conversation
+      setActiveConversation(conversation);
+      setActiveContact(conversation.contact ?? null);
+      setMessages([]);
+
+      // Update URL to reflect the selection
+      router.replace(`/inbox?c=${conversation.id}`, { scroll: false });
+
+      // Clear the deep-link ref so this doesn't interfere
+      autoSelectedForDeepLinkRef.current = conversation.id;
+    },
+    [router]
+  );
+
   // On mobile (<lg) we show a SINGLE pane — either the list or the
   // thread — rather than cramming both side-by-side. Selecting a
   // conversation slides the thread in; the thread's back button pops
@@ -533,6 +580,19 @@ export default function InboxPage() {
             hasActiveConv ? "hidden lg:flex" : "flex",
           )}
         >
+          {/* New Message Button */}
+          <div className="border-b border-slate-800 p-3">
+            <GatedButton
+              canAct={canSend && whatsappConnected === true}
+              gateReason="send messages"
+              onClick={() => setNewMessageDialogOpen(true)}
+              className="w-full justify-center gap-2 bg-primary hover:bg-primary/90"
+              disabled={whatsappConnected !== true}
+            >
+              <Plus className="h-4 w-4" />
+              New Message
+            </GatedButton>
+          </div>
           <ConversationList
             activeConversationId={activeConversation?.id ?? null}
             onSelect={handleSelectConversation}
@@ -578,6 +638,14 @@ export default function InboxPage() {
           <ContactSidebar contact={activeContact} />
         </div>
       </div>
+
+      {/* New Message Dialog */}
+      <NewMessageDialog
+        open={newMessageDialogOpen}
+        onOpenChange={setNewMessageDialogOpen}
+        onConversationCreated={handleNewConversationCreated}
+        whatsappConnected={whatsappConnected === true}
+      />
     </div>
   );
 }

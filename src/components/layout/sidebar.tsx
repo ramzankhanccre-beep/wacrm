@@ -8,13 +8,23 @@ import { useAuth } from "@/hooks/use-auth";
 import { useTotalUnread } from "@/hooks/use-total-unread";
 import {
   Crown,
+  Cpu,
+  DollarSign,
+  FileText,
   GitBranch,
+  GraduationCap,
   LayoutDashboard,
+  Lock,
   LogOut,
   MessageSquare,
+  Phone,
+  Plug,
   Radio,
   Settings,
   Shield,
+  Sparkles,
+  Stars,
+  Store,
   User,
   UserCog,
   Users,
@@ -22,6 +32,12 @@ import {
   Workflow,
   X,
   Zap,
+  Calendar,
+  Brain,
+  Building2,
+  Play,
+  Command,
+  Clock,
 } from "lucide-react";
 import type { AccountRole } from "@/lib/auth/roles";
 
@@ -93,7 +109,38 @@ const navItems: NavItem[] = [
   { href: "/pipelines", label: "Pipelines", icon: GitBranch },
   { href: "/broadcasts", label: "Broadcasts", icon: Radio },
   { href: "/automations", label: "Automations", icon: Zap },
+  { href: "/agents", label: "AI Agents", icon: Cpu, beta: true },
+  { href: "/teams", label: "Teams", icon: UsersRound, beta: true },
+  { href: "/routing", label: "Routing", icon: GitBranch, beta: true },
+  { href: "/brain", label: "AI Brain", icon: Stars, beta: true },
+  { href: "/brain/self-improvement", label: "  Self-Improvement", icon: Brain, beta: true },
+  { href: "/brain/agent-evolution", label: "  Agent Evolution", icon: GraduationCap, beta: true },
+  { href: "/brain/prompt-recommendations", label: "  Prompt Recs", icon: FileText, beta: true },
+  { href: "/brain/workflow-recommendations", label: "  Workflow Recs", icon: Workflow, beta: true },
+  { href: "/brain/cost-recommendations", label: "  Cost Recs", icon: DollarSign, beta: true },
+  { href: "/supervisor", label: "Supervisor", icon: Shield, beta: true },
+  { href: "/voice", label: "Voice", icon: Phone, beta: true },
   { href: "/flows", label: "Flows", icon: Workflow, beta: true },
+  { href: "/flows/templates", label: "Templates", icon: Sparkles, beta: true },
+  { href: "/flows/schedules", label: "Schedules", icon: Calendar, beta: true },
+  { href: "/flows/ai-generate", label: "AI Generate", icon: Sparkles, beta: true },
+  { href: "/enterprise", label: "Enterprise", icon: Building2, beta: true },
+  { href: "/enterprise/audit-logs", label: "  Audit Logs", icon: FileText, beta: true },
+  { href: "/enterprise/explainability", label: "  Explainability", icon: Brain, beta: true },
+  { href: "/enterprise/safety-layer", label: "  Safety Layer", icon: Shield, beta: true },
+  { href: "/enterprise/workspace-permissions", label: "  Permissions", icon: Users, beta: true },
+  { href: "/enterprise/multi-company", label: "  Multi-Company", icon: Building2, beta: true },
+  { href: "/enterprise/compliance", label: "  Compliance", icon: Lock, beta: true },
+  { href: "/marketplace", label: "Marketplace", icon: Store, beta: true },
+  { href: "/marketplace/agents", label: "  Agents", icon: Cpu, beta: true },
+  { href: "/marketplace/skills", label: "  Skills", icon: Zap, beta: true },
+  { href: "/marketplace/workflows", label: "  Workflows", icon: Workflow, beta: true },
+  { href: "/marketplace/integrations", label: "  Integrations", icon: Plug, beta: true },
+  { href: "/ai-architect", label: "AI Architect", icon: Building2, beta: true },
+  { href: "/ai-assistant", label: "AI Assistant", icon: User, beta: true },
+  { href: "/ai-simulator", label: "AI Simulator", icon: Play, beta: true },
+  { href: "/command-center", label: "Command Center", icon: Command, beta: true },
+  { href: "/memory-time-machine", label: "Memory Time Machine", icon: Clock, beta: true },
 ];
 
 const bottomNavItems = [
@@ -183,7 +230,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
               <MessageSquare className="h-4 w-4" />
             </div>
             <span className="text-sm font-semibold text-white">
-              CRM Template for WhatsApp
+              Brand Reach Solutions
             </span>
           </Link>
           <button

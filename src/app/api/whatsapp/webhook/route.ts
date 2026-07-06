@@ -7,6 +7,7 @@ import { findExistingContact, isUniqueViolation } from '@/lib/contacts/dedupe'
 import { verifyMetaWebhookSignature } from '@/lib/whatsapp/webhook-signature'
 import { runAutomationsForTrigger } from '@/lib/automations/engine'
 import { dispatchInboundToFlows } from '@/lib/flows/engine'
+import { applyRouting } from '@/lib/routing/service'
 import {
   handleTemplateWebhookChange,
   isTemplateWebhookField,
@@ -629,6 +630,38 @@ async function processMessage(
 
   if (convError) {
     console.error('Error updating conversation:', convError)
+  }
+
+  // ============================================================
+  // Agent Routing
+  //
+  // Apply routing rules to assign the conversation to an agent/team.
+  // Fire-and-forget: routing failures shouldn't block message processing.
+  // ============================================================
+  const { data: conv } = await supabaseAdmin()
+    .from('conversations')
+    .select('assigned_agent_id')
+    .eq('id', conversation.id)
+    .single()
+
+  if (conv && !conv.assigned_agent_id) {
+    const inboundText = contentText ?? message.text?.body ?? ''
+
+    // Get message count for this conversation
+    const { count: msgCount } = await supabaseAdmin()
+      .from('messages')
+      .select('id', { count: 'exact', head: true })
+      .eq('conversation_id', conversation.id)
+      .eq('sender_type', 'customer')
+
+    applyRouting({
+      accountId,
+      contactId: contactRecord.id,
+      conversationId: conversation.id,
+      messageText: inboundText,
+      leadStage: contactRecord.lead_stage ?? undefined,
+      messageCount: msgCount ?? 0,
+    }).catch((err) => console.error('[routing] failed:', err))
   }
 
   // If this contact was a recent broadcast recipient, flag the reply
